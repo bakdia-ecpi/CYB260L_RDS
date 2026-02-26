@@ -1,0 +1,99 @@
+# Description of what this change includes
+# Revision number
+# Date
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CloudFormation template to create a VPC named VPC-Bakdia8212
+  spanning 3 Availability Zones in us-west-2, with an RDS MySQL instance.
+
+Parameters:
+  VPCCidr:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+
+Resources:
+  # VPC
+  VPCBakdia8212:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: VPC-Bakdia8212
+
+  # Public subnets in three AZs
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCBakdia8212
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: us-west-2a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet1-Bakdia8212
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCBakdia8212
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: us-west-2b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet2-Bakdia8212
+
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCBakdia8212
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: us-west-2c
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet3-Bakdia8212
+
+  # Security Group for RDS
+  RdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS instance
+      VpcId: !Ref VPCBakdia8212
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.0.0/16  # Only allow traffic from VPC
+
+  # RDS MySQL instance
+  RdsInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      VPCSecurityGroups:
+        - !Ref RdsSecurityGroup
+      DBInstanceIdentifier: playground-db
+      DBInstanceClass: db.t3.micro
+      Engine: MySQL
+      AllocatedStorage: '5'
+      MasterUsername: Admin
+      MasterUserPassword: CloudAcademy123!
+      PubliclyAccessible: false
+      StorageType: gp3
+
+Outputs:
+  VPCId:
+    Description: The ID of the created VPC
+    Value: !Ref VPCBakdia8212
+
+  RdsEndpoint:
+    Description: The endpoint of the RDS instance
+    Value: !GetAtt RdsInstance.Endpoint.Address
+
+  RdsSecurityGroupId:
+    Description: Security Group ID for RDS
+    Value: !Ref RdsSecurityGroup
